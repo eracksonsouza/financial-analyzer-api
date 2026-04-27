@@ -6,11 +6,6 @@ financial-analyzer-backend/data/
 financial-analyzer-backend/*.sqlite
 financial-analyzer-backend/*.db
 
-# Frontend / Node (if applicable)
-node_modules/
-frontend/node_modules/
-financial-analyzer-frontend/node_modules/
-
 # OS / editor
 .DS_Store
 .idea/
