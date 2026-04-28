@@ -1,7 +1,7 @@
 FROM php:8.3-cli-alpine
 
-RUN apk add --no-cache sqlite sqlite-dev \
-    && docker-php-ext-install pdo pdo_sqlite
+RUN apk add --no-cache sqlite sqlite-dev postgresql-dev \
+    && docker-php-ext-install pdo pdo_sqlite pdo_pgsql
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
