@@ -1,50 +1,141 @@
 # Financial Analyzer API
 
-API em PHP para registrar transações, consolidar métricas financeiras e gerar diagnósticos personalizados com apoio da Claude.
+<p align="left">
+   <img alt="PHP" src="https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white" />
+   <img alt="Slim" src="https://img.shields.io/badge/Slim-4-3F3F3F?logo=slim&logoColor=white" />
+   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white" />
+   <img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" />
+   <img alt="OpenAI Compatible" src="https://img.shields.io/badge/AI-OpenAI%20Compatible-10A37F?logo=openai&logoColor=white" />
+</p>
 
-## Stack
+API em PHP (Slim 4) para registrar transações, consolidar métricas financeiras e gerar diagnósticos personalizados com apoio de IA. O fluxo foi pensado para ser simples de integrar com um front-end: você envia renda e despesas, recebe métricas prontas e insights acionáveis.
 
-- **Backend**: PHP 8.3 + Slim Framework 4 + SQLite + cURL
-- **IA**: Claude API (Anthropic)
-- **Infra**: Docker Compose
+## ✨ O que esta API entrega
 
-## Estrutura
+- Cadastro e listagem de transações financeiras.
+- Cálculo de métricas (saldo, taxa de poupança, regra 50/30/20, score de saúde financeira).
+- Diagnóstico e sugestões com IA baseadas nos dados reais do usuário.
+- Histórico completo das análises geradas.
 
-```
-financial-analyzer-api/
-├── financial-analyzer-backend/
-│   ├── public/index.php
-│   ├── src/
-│   │   ├── Controllers/
-│   │   ├── Services/
-│   │   └── Infrastructure/
-│   ├── composer.json
-│   └── Dockerfile
-└── docker-compose.yml
-```
+## 🤖 Provedor de IA
 
-## Endpoints
+A integração usa o formato **OpenAI Chat Completions**, então funciona com qualquer provedor compatível:
 
-| Método | Rota                  | Descrição                 |
-|--------|-----------------------|---------------------------|
-| GET    | /health               | Health check              |
-| POST   | /api/analysis         | Cria uma nova análise     |
-| GET    | /api/analysis/history | Lista análises anteriores |
-| GET    | /api/analysis/{id}    | Detalhe de uma análise    |
-| GET    | /api/transactions     | Lista transações          |
-| POST   | /api/transactions     | Cria uma transação        |
+- OpenAI (`https://api.openai.com/v1/chat/completions`)
+- OpenRouter (`https://openrouter.ai/api/v1/chat/completions`)
+- Groq (`https://api.groq.com/openai/v1/chat/completions`)
+- DeepSeek (`https://api.deepseek.com/v1/chat/completions`)
+- Ollama local (`http://localhost:11434/v1/chat/completions`)
+- Qualquer outro endpoint compatível
 
-## Como rodar
+Basta apontar `AI_API_URL` para o provedor desejado.
+
+## 🧰 Requisitos
+
+- PHP 8.3+ e Composer (para rodar local), **ou**
+- Docker + Docker Compose (recomendado).
+
+## ⚙️ Configuração
+
+1. Copie `.env.example` para `.env`:
+   ```
+   cp .env.example .env
+   ```
+2. Preencha as variáveis:
+   - `AI_API_KEY` — chave do provedor de IA (obrigatório)
+   - `AI_API_URL` — endpoint compatível com OpenAI (opcional, default: OpenAI)
+   - `AI_MODEL` — modelo a ser usado (opcional, default: `gpt-4o-mini`)
+   - `DB_PATH` — caminho do SQLite (opcional, default: `/data/financial.db`)
+
+> Dica: o banco SQLite é criado automaticamente no primeiro uso.
+
+## 🐳 Rodar com Docker (recomendado)
 
 ```bash
-cp .env.example .env
-# Edite .env com sua ANTHROPIC_API_KEY
-docker compose up --build
+docker compose up --build -d
 ```
 
-Backend: http://localhost:8080
+A API ficará disponível em `http://localhost:8080`.
 
-## Observações
+Para parar:
+```bash
+docker compose down
+```
 
+## ▶️ Rodar localmente (sem Docker)
+
+```bash
+composer install
+php -S localhost:8080 -t public public/index.php
+```
+
+## 🧭 Endpoints
+
+| Método | Rota                          | Descrição                                |
+| ------ | ----------------------------- | ---------------------------------------- |
+| GET    | `/health`                     | Health check                             |
+| POST   | `/api/analysis`               | Cria análise financeira com IA           |
+| GET    | `/api/analysis/history`       | Lista histórico de análises              |
+| GET    | `/api/analysis/{id}`          | Detalha uma análise específica           |
+| GET    | `/api/transactions?month=YYYY-MM` | Lista transações (filtro opcional por mês) |
+| POST   | `/api/transactions`           | Cria uma transação                       |
+
+### Exemplo: `POST /api/analysis`
+
+```json
+{
+  "income": 5000,
+  "expenses": {
+    "moradia": 1500,
+    "alimentacao": 800,
+    "transporte": 400,
+    "saude": 200,
+    "lazer": 300,
+    "educacao": 150,
+    "dividas": 600,
+    "outros": 250
+  }
+}
+```
+
+Resposta:
+```json
+{
+  "id": 1,
+  "metrics": {
+    "income": 5000,
+    "total_expenses": 4200,
+    "balance": 800,
+    "savings_rate": 16,
+    "expense_ratios": { "moradia": 30, "alimentacao": 16, "...": "..." },
+    "rule_50_30_20": { "needs_pct": 58, "wants_pct": 14, "debt_pct": 12 },
+    "health_score": 85
+  },
+  "ai": {
+    "diagnostico": "Sua saúde financeira é boa...",
+    "melhorias": ["...", "...", "..."],
+    "score_label": "Regular"
+  }
+}
+```
+
+## 🔎 Observações
+
+- CORS está liberado para `*`. Para produção, restrinja a origem.
+- Em produção, desligue o `displayErrorDetails` no `addErrorMiddleware`.
 - O banco SQLite é criado automaticamente no primeiro uso.
-- O projeto foi mantido apenas como API; não há frontend versionado neste repositório.
+
+## 📦 Estrutura do projeto
+
+```
+public/                # Bootstrap do Slim e middlewares
+src/Controllers/       # Endpoints da API
+src/Services/          # Regras de negócio e integração com IA
+src/Infrastructure/    # Persistência/DB
+```
+
+## 💡 Próximas ideias
+
+- Autenticação JWT para multiusuário.
+- Paginação e filtros avançados para histórico.
+- Exportação de análises em PDF.
