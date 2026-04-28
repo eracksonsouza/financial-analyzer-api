@@ -1,0 +1,21 @@
+.git
+.gitignore
+.vscode
+.idea
+
+# Local env/secrets
+.env
+.env.*
+
+# Composer deps should be installed inside image
+vendor/
+
+# Dev/test artifacts
+tests/
+tmp/
+phpstan.neon
+phpunit.xml
+
+# OS junk
+.DS_Store
+Thumbs.db
