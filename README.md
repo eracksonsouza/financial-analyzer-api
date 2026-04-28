@@ -69,6 +69,43 @@ composer install
 php -S localhost:8080 -t public public/index.php
 ```
 
+## 🚀 Deploy no Railway
+
+Este projeto já inclui `Dockerfile`, então o Railway consegue fazer deploy via Docker automaticamente.
+
+### 1) Criar o serviço
+
+- No Railway: **New Project** → **Deploy from GitHub repo** → selecione este repositório.
+- O Railway deve detectar o `Dockerfile` e buildar a imagem.
+
+### 2) Configurar variáveis (obrigatório)
+
+No serviço criado, vá em **Variables** e configure:
+
+- `AI_API_KEY` (obrigatório)
+- `AI_API_URL` (opcional, default: `https://api.openai.com/v1/chat/completions`)
+- `AI_MODEL` (opcional, default: `gpt-4o-mini`)
+- `APP_DEBUG` (recomendado `false` em produção)
+- `CORS_ALLOWED_ORIGINS` (recomendado setar seu domínio do front)
+
+> O Railway injeta a variável `PORT` automaticamente. O container já faz bind em `0.0.0.0:$PORT`.
+
+### 3) Persistência do SQLite (recomendado)
+
+Por padrão, o SQLite é um arquivo. Em produção, use um volume persistente para não perder dados em redeploy.
+
+- Crie um **Volume** no Railway e monte, por exemplo, em `/data`.
+- Em **Variables**, defina:
+  - `DB_PATH=/data/financial.db`
+
+Sem volume, o banco pode ser recriado em um redeploy.
+
+### 4) Verificar health check
+
+- Após o deploy, abra a URL pública do Railway e teste:
+  - `GET /health`
+
+
 ## 🧭 Endpoints
 
 | Método | Rota                          | Descrição                                |
