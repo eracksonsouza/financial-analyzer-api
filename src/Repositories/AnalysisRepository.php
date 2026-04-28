@@ -23,7 +23,37 @@ final class AnalysisRepository
     {
         $createdAt = date('Y-m-d H:i:s');
 
-        $stmt = $this->connection->pdo()->prepare(<<<SQL
+        $pdo = $this->connection->pdo();
+        $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+        if ($driver === 'pgsql') {
+            $stmt = $pdo->prepare(<<<SQL
+                INSERT INTO analyses (income, expenses, metrics, ai_result, created_at)
+                VALUES (:income, :expenses, :metrics, :ai_result, :created_at)
+                RETURNING id
+            SQL);
+
+            $stmt->execute([
+                ':income'     => $income,
+                ':expenses'   => json_encode($expenses->toArray(), JSON_THROW_ON_ERROR),
+                ':metrics'    => json_encode($metrics, JSON_THROW_ON_ERROR),
+                ':ai_result'  => json_encode($aiResult, JSON_THROW_ON_ERROR),
+                ':created_at' => $createdAt,
+            ]);
+
+            $id = (int) $stmt->fetchColumn();
+
+            return [
+                'id'         => $id,
+                'income'     => $income,
+                'expenses'   => $expenses->toArray(),
+                'metrics'    => $metrics,
+                'ai_result'  => $aiResult,
+                'created_at' => $createdAt,
+            ];
+        }
+
+        $stmt = $pdo->prepare(<<<SQL
             INSERT INTO analyses (income, expenses, metrics, ai_result, created_at)
             VALUES (:income, :expenses, :metrics, :ai_result, :created_at)
         SQL);
@@ -37,7 +67,7 @@ final class AnalysisRepository
         ]);
 
         return [
-            'id'         => (int) $this->connection->pdo()->lastInsertId(),
+            'id'         => (int) $pdo->lastInsertId(),
             'income'     => $income,
             'expenses'   => $expenses->toArray(),
             'metrics'    => $metrics,

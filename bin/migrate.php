@@ -5,15 +5,65 @@ declare(strict_types=1);
 require __DIR__ . '/../vendor/autoload.php';
 
 use App\Infrastructure\Connection;
+use PDO;
+use PDOException;
 
-$dbPath = $_ENV['DB_PATH'] ?? getenv('DB_PATH') ?: __DIR__ . '/../data/financial.db';
+/** Reads from $_ENV first, falls back to getenv() (more reliable under php -S). */
+$env = static function (string $key, ?string $default = null): ?string {
+    $value = $_ENV[$key] ?? getenv($key);
+    return ($value === false || $value === '') ? $default : (string) $value;
+};
 
-$dataDir = dirname($dbPath);
-if (!is_dir($dataDir)) {
-    mkdir($dataDir, 0775, true);
+$connection = Connection::fromEnv($env);
+
+// Retry helps when Postgres container is still starting.
+$attempts = 0;
+$pdo = null;
+while (true) {
+    try {
+        $pdo = $connection->pdo();
+        break;
+    } catch (PDOException $e) {
+        $attempts++;
+        if ($attempts >= 15) {
+            throw $e;
+        }
+        usleep(300_000);
+    }
 }
 
-$pdo = (new Connection($dbPath))->pdo();
+if (!$pdo instanceof PDO) {
+    throw new RuntimeException('Database connection not established');
+}
+
+$driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+if ($driver === 'pgsql') {
+    $pdo->exec(<<<SQL
+        CREATE TABLE IF NOT EXISTS analyses (
+            id         BIGSERIAL PRIMARY KEY,
+            income     DOUBLE PRECISION NOT NULL,
+            expenses   JSONB            NOT NULL,
+            metrics    JSONB            NOT NULL,
+            ai_result  JSONB            NOT NULL,
+            created_at TIMESTAMPTZ      NOT NULL DEFAULT NOW()
+        )
+    SQL);
+
+    $pdo->exec(<<<SQL
+        CREATE TABLE IF NOT EXISTS transactions (
+            id         BIGSERIAL PRIMARY KEY,
+            title      TEXT             NOT NULL,
+            amount     DOUBLE PRECISION NOT NULL,
+            date       TEXT             NOT NULL,
+            type       TEXT             NOT NULL,
+            created_at TIMESTAMPTZ      NOT NULL DEFAULT NOW()
+        )
+    SQL);
+
+    fwrite(STDOUT, "Migrations applied (PostgreSQL)\n");
+    exit(0);
+}
 
 $pdo->exec(<<<SQL
     CREATE TABLE IF NOT EXISTS analyses (
@@ -37,4 +87,4 @@ $pdo->exec(<<<SQL
     )
 SQL);
 
-fwrite(STDOUT, "Migrations applied at {$dbPath}\n");
+fwrite(STDOUT, "Migrations applied (SQLite)\n");

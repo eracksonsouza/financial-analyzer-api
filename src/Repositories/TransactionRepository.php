@@ -19,7 +19,37 @@ final class TransactionRepository
     {
         $createdAt = date('Y-m-d H:i:s');
 
-        $stmt = $this->connection->pdo()->prepare(<<<SQL
+        $pdo = $this->connection->pdo();
+        $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+        if ($driver === 'pgsql') {
+            $stmt = $pdo->prepare(<<<SQL
+                INSERT INTO transactions (title, amount, date, type, created_at)
+                VALUES (:title, :amount, :date, :type, :created_at)
+                RETURNING id
+            SQL);
+
+            $stmt->execute([
+                ':title'      => $req->title,
+                ':amount'     => $req->amount,
+                ':date'       => $req->date,
+                ':type'       => $req->type->value,
+                ':created_at' => $createdAt,
+            ]);
+
+            $id = (int) $stmt->fetchColumn();
+
+            return [
+                'id'         => $id,
+                'title'      => $req->title,
+                'amount'     => $req->amount,
+                'date'       => $req->date,
+                'type'       => $req->type->value,
+                'created_at' => $createdAt,
+            ];
+        }
+
+        $stmt = $pdo->prepare(<<<SQL
             INSERT INTO transactions (title, amount, date, type, created_at)
             VALUES (:title, :amount, :date, :type, :created_at)
         SQL);
@@ -33,7 +63,7 @@ final class TransactionRepository
         ]);
 
         return [
-            'id'         => (int) $this->connection->pdo()->lastInsertId(),
+            'id'         => (int) $pdo->lastInsertId(),
             'title'      => $req->title,
             'amount'     => $req->amount,
             'date'       => $req->date,

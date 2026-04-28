@@ -17,7 +17,7 @@ $env = static function (string $key, ?string $default = null): ?string {
 
 return [
     Connection::class => static function () use ($env) {
-        return new Connection($env('DB_PATH', '/data/financial.db') ?? '/data/financial.db');
+        return Connection::fromEnv($env);
     },
 
     LoggerInterface::class => static function () use ($env) {
