@@ -3,7 +3,7 @@
 <p align="left">
    <img alt="PHP" src="https://img.shields.io/badge/PHP-8.3-777BB4?logo=php&logoColor=white" />
    <img alt="Slim" src="https://img.shields.io/badge/Slim-4-3F3F3F?logo=slim&logoColor=white" />
-   <img alt="SQLite" src="https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white" />
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" />
    <img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" />
    <img alt="OpenAI Compatible" src="https://img.shields.io/badge/AI-OpenAI%20Compatible-10A37F?logo=openai&logoColor=white" />
 </p>
@@ -45,9 +45,9 @@ Basta apontar `AI_API_URL` para o provedor desejado.
    - `AI_API_KEY` — chave do provedor de IA (obrigatório)
    - `AI_API_URL` — endpoint compatível com OpenAI (opcional, default: OpenAI)
    - `AI_MODEL` — modelo a ser usado (opcional, default: `gpt-4o-mini`)
-   - `DB_PATH` — caminho do SQLite (opcional, default: `/data/financial.db`)
+  - `DATABASE_URL` — string de conexão do PostgreSQL (obrigatório)
 
-> Dica: o banco SQLite é criado automaticamente no primeiro uso.
+> Dica: com Docker Compose, o Postgres sobe automaticamente.
 
 ## 🐳 Rodar com Docker (recomendado)
 
@@ -88,19 +88,15 @@ No serviço criado, vá em **Variables** e configure:
 - `APP_DEBUG` (recomendado `false` em produção)
 - `CORS_ALLOWED_ORIGINS` (recomendado setar seu domínio do front)
 
+E configure também:
+
+- `DATABASE_URL` (obrigatório)
+
+> Se você adicionar um PostgreSQL no Railway (Add → Database → PostgreSQL), ele normalmente injeta `DATABASE_URL` automaticamente.
+
 > O Railway injeta a variável `PORT` automaticamente. O container já faz bind em `0.0.0.0:$PORT`.
 
-### 3) Persistência do SQLite (recomendado)
-
-Por padrão, o SQLite é um arquivo. Em produção, use um volume persistente para não perder dados em redeploy.
-
-- Crie um **Volume** no Railway e monte, por exemplo, em `/data`.
-- Em **Variables**, defina:
-  - `DB_PATH=/data/financial.db`
-
-Sem volume, o banco pode ser recriado em um redeploy.
-
-### 4) Verificar health check
+### 3) Verificar health check
 
 - Após o deploy, abra a URL pública do Railway e teste:
   - `GET /health`
@@ -160,7 +156,7 @@ Resposta:
 
 - CORS está liberado para `*`. Para produção, restrinja a origem.
 - Em produção, desligue o `displayErrorDetails` no `addErrorMiddleware`.
-- O banco SQLite é criado automaticamente no primeiro uso.
+- Em produção, prefira PostgreSQL (persistência, concorrência e backups).
 
 ## 📦 Estrutura do projeto
 
