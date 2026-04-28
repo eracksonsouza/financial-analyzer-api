@@ -31,9 +31,19 @@ $errorMiddleware->setDefaultErrorHandler(
 
 // CORS
 $app->add(function ($request, $handler) {
+    $allowedEnv = $_ENV['CORS_ALLOWED_ORIGINS'] ?? getenv('CORS_ALLOWED_ORIGINS') ?: 'http://localhost:5173';
+    $origins = array_values(array_filter(array_map('trim', explode(',', (string) $allowedEnv))));
+    if ($origins === []) {
+        $origins = ['http://localhost:5173'];
+    }
+
+    $origin = $request->getHeaderLine('Origin');
+    $allowed = in_array($origin, $origins, true) ? $origin : $origins[0];
+
     $response = $handler->handle($request);
     return $response
-        ->withHeader('Access-Control-Allow-Origin', '*')
+        ->withHeader('Access-Control-Allow-Origin', $allowed)
+        ->withHeader('Vary', 'Origin')
         ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
         ->withHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 });
